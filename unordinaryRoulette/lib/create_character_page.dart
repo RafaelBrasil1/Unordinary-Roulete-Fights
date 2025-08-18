@@ -24,7 +24,10 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
   final StreamController<int> _genderController = StreamController<int>();
   final StreamController<int> _powerController = StreamController<int>();
 
-  final List<String> _genders = ['Masculino', 'Feminino', 'Não Binário'];
+  int _genderResultIndex = 0;
+  int _powerResultIndex = 0;
+
+  final List<String> _genders = ['Masculino', 'Feminino'];
   final List<String> _powers = [
     'Super Força',
     'Telecinese',
@@ -38,11 +41,9 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
   String get _characterImage {
     if (_selectedGender == 'Masculino') {
       return 'assets/images/male_character.png';
-    } else if (_selectedGender == 'Feminino') {
-      return 'assets/images/female_character.png';
     } else {
-      // Usar a imagem de placeholder para a opção não-binária ou o estado inicial
-      return 'assets/images/placeholder.png';
+      // Se não for Masculino, só pode ser Feminino
+      return 'assets/images/female_character.png';
     }
   }
 
@@ -116,8 +117,11 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
                 children: [
                   // Imagem de fundo (base)
                   Image.asset('assets/images/character_base.png'),
-                  // Imagem do personagem (masculino, feminino, ou placeholder)
-                  Image.asset(_characterImage),
+
+                  // ADICIONE ESTA CONDIÇÃO
+                  // A imagem só será construída se um gênero já foi selecionado
+                  if (_selectedGender == 'Masculino' || _selectedGender == 'Feminino')
+                    Image.asset(_characterImage),
                 ],
               ),
             ),
@@ -194,14 +198,32 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 20),
-        _buildRoulette(
-          items: _genders,
-          streamController: _genderController,
-          onSpin: (int index) {
-            setState(() {
-              _selectedGender = _genders[index];
-            });
+        SizedBox(
+          height: 150,
+          child: FortuneWheel(
+            selected: _genderController.stream,
+            animateFirst: false,
+            items: [
+              for (var gender in _genders) FortuneItem(child: Text(gender)),
+            ],
+            // A MÁGICA ACONTECE AQUI!
+            onAnimationEnd: () {
+              setState(() {
+                // Atualiza o texto APENAS quando a roleta para.
+                _selectedGender = _genders[_genderResultIndex];
+              });
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: () {
+            // Sorteia e guarda o índice secretamente.
+            _genderResultIndex = Fortune.randomInt(0, _genders.length);
+            // Manda a roleta girar até o índice sorteado.
+            _genderController.add(_genderResultIndex);
           },
+          child: const Text('Girar Roleta'),
         ),
         const SizedBox(height: 20),
         Text('Gênero selecionado: $_selectedGender', style: const TextStyle(fontSize: 16)),
@@ -214,6 +236,8 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
     );
   }
 
+  // Em _CreateCharacterPageState
+
   Widget _buildPowerStep() {
     return Column(
       children: [
@@ -222,14 +246,31 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 20),
-        _buildRoulette(
-          items: _powers,
-          streamController: _powerController,
-          onSpin: (int index) {
-            setState(() {
-              _selectedPower = _powers[index];
-            });
+        SizedBox(
+          height: 150,
+          child: FortuneWheel(
+            selected: _powerController.stream,
+            animateFirst: false,
+            items: [
+              for (var power in _powers) FortuneItem(child: Text(power)),
+            ],
+            // A mesma lógica da roleta de gênero
+            onAnimationEnd: () {
+              setState(() {
+                _selectedPower = _powers[_powerResultIndex];
+              });
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: () {
+            // Sorteia e guarda o índice do poder secretamente.
+            _powerResultIndex = Fortune.randomInt(0, _powers.length);
+            // Manda a roleta girar até ele.
+            _powerController.add(_powerResultIndex);
           },
+          child: const Text('Girar Roleta'),
         ),
         const SizedBox(height: 20),
         Text('Poder selecionado: $_selectedPower', style: const TextStyle(fontSize: 16)),
@@ -277,16 +318,19 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
             items: [
               for (var item in items) FortuneItem(child: Text(item)),
             ],
-            onAnimationEnd: () {
-              final selectedIndex = Fortune.randomInt(0, items.length);
-              onSpin(selectedIndex);
-            },
+            // onAnimationEnd não é mais necessário para a lógica principal
           ),
         ),
         const SizedBox(height: 10),
         ElevatedButton(
           onPressed: () {
+            // 1. Sorteia o índice do resultado
             final randomIndex = Fortune.randomInt(0, items.length);
+
+            // 2. Chama a função para atualizar o estado da página (ex: _selectedGender)
+            onSpin(randomIndex);
+
+            // 3. Adiciona o índice ao controller para a roleta girar ATÉ esse resultado
             streamController.add(randomIndex);
           },
           child: const Text('Girar Roleta'),
