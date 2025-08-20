@@ -133,6 +133,23 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
                   ),
                  ),
               Image.asset('assets/images/character_base.png'),
+              if (_nameController.text.isNotEmpty)
+                Align(
+                  // Alinha o texto na parte de baixo e centralizado
+                  alignment: const Alignment(-0.1, 0.6),
+                  child: Padding(
+                    // Adiciona um respiro na parte de baixo
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: Text(
+                      _nameController.text,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 12,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                ),
                 ],
               ),
             ),
