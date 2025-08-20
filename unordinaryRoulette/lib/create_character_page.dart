@@ -110,18 +110,29 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
         child: Column(
           children: [
             // Imagem de fundo com o personagem sobreposto
-            SizedBox(
-              height: 200, // Altura da sua imagem base
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Imagem de fundo (base)
-                  Image.asset('assets/images/character_base.png'),
+          SizedBox(
+          height: 200, // Altura da sua imagem base
+          child: Stack(
+            // O alinhamento do Stack continua no centro para a imagem de base
+            alignment: Alignment.center,
+            children: [
 
-                  // ADICIONE ESTA CONDIÇÃO
-                  // A imagem só será construída se um gênero já foi selecionado
-                  if (_selectedGender == 'Masculino' || _selectedGender == 'Feminino')
-                    Image.asset(_characterImage),
+              // CONDIÇÃO ATUALIZADA com os novos widgets
+              if (_selectedGender == 'Masculino' || _selectedGender == 'Feminino')
+                Align(
+                  // 1. POSICIONAMENTO:
+                  //    -0.2 move o widget 10% para a esquerda do centro.
+                  //    Valores vão de -1.0 (extrema esquerda) a 1.0 (extrema direita).
+                  alignment: const Alignment(-0.138, 0.0),
+                  child: Transform.scale(
+                    // 2. TAMANHO:
+                    //    0.8 torna o widget 20% menor (80% do tamanho original).
+                    //    1.0 é o tamanho normal.
+                    scale: 0.5,
+                    child: Image.asset(_characterImage),
+                  ),
+                 ),
+              Image.asset('assets/images/character_base.png'),
                 ],
               ),
             ),
