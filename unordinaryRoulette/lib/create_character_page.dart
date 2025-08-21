@@ -53,12 +53,96 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
   // Listas de Opções
   final List<String> _genders = ['Masculino', 'Feminino'];
   final List<String> _powers = [
-    'Super Força',
-    'Telecinese',
-    'Invisibilidade',
-    'Manipulação de Fogo',
-    'Cura Acelerada',
-    'Eletrocinese',
+    'Afterimage',
+    'Arachnid',
+    'Arcane Shot',
+    'Archer',
+    'Armor Suit',
+    'Aura Manipulation',
+    'Barrage',
+    'Barrier',
+    'Blademaster',
+    'Botanist',
+    'Catalyst Ray',
+    'Catch Up',
+    'Channel Master',
+    'Charge',
+    'Charge Shot',
+    'Clairvoyance',
+    'Clobber',
+    'Conjure: Disks',
+    'Conjure: Vines',
+    'Crescent Slash',
+    'Cripple',
+    'Demolition',
+    'Demon Blade',
+    'Demon Claw',
+    'Dizzy Punch',
+    'Dominion',
+    'Duplication',
+    'Energy Discharge',
+    'Explosion',
+    'Fast Travel',
+    'Flame Claw',
+    'Flash Forward',
+    'Fortify',
+    'Gravity Manipulation',
+    'Grenadier',
+    'Ground Pound',
+    'Hair Growth',
+    'Hand Blade',
+    'Healing',
+    'Heal Link',
+    'Heat Palm',
+    'Heavy-hitter',
+    'Hunter',
+    'Hydrofreeze',
+    'Hypnosis',
+    'Illumination',
+    'Impact',
+    'Invisibility',
+    'Landscaping',
+    'Lazor',
+    'Lie Detection',
+    'Lightning',
+    'Medium',
+    'Memory Recall',
+    'Mind Reading',
+    'Minefield',
+    'Missiles',
+    'Needles',
+    'Nightmare',
+    'Particles',
+    'Phantom Fist',
+    'Phantom Push',
+    'Phase Shift',
+    'Portal',
+    'Psychopomp',
+    'Quick Strike',
+    'Regeneration',
+    'Repulsion',
+    'Rock Arm',
+    'Sensory Control',
+    'Shadow Flame',
+    'Shockwave',
+    'Sleep Touch',
+    'Spectral Claw',
+    'Speed',
+    'Spikes',
+    'Stone Skin',
+    'Strength',
+    'Strong Kick',
+    'Strong Punch',
+    'Superhuman',
+    'Super Strength',
+    'Telekinesis',
+    'Telepathy',
+    'Teleportation',
+    'Time Manipulation',
+    'Tremor',
+    'Vigor',
+    'Whirlwind',
+    'X-Ray Vision',
   ];
   final List<ColorOption> _hairColors = [
     const ColorOption(name: 'Roxo Profundo', color: Color(0xFF5C2A7F)),
@@ -139,6 +223,7 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
             );
             return;
           }
+          _currentStep = CharacterCreationStep.hairColor;
         case CharacterCreationStep.hairColor:
           if (_selectedHairColor == null) { // MODIFICADO
             ScaffoldMessenger.of(context).showSnackBar(
@@ -192,6 +277,9 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
 
   @override
   Widget build(BuildContext context) {
+    Color colorToShow = _selectedHairColor?.color ?? Colors.white;
+    Color colorToShow2 = _selectedEyeColor?.color ?? Colors.white;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Criar Novo Personagem'),
@@ -205,10 +293,41 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
             SizedBox(
               height: 300, // Altura da sua imagem base
               child: Stack(
-                // O alinhamento do Stack continua no centro para a imagem de base
+                  // O alinhamento do Stack continua no centro para a imagem de base
                 alignment: Alignment.center,
                 children: [
+                  Align(
+                   alignment: Alignment(-0.2, 0),
+                   child:Container(
+                     width: 150,   // 200 pixels de largura
+                     height: 150,  // 100 pixels de altura
+                     color: colorToShow,
 
+
+                   )
+                  ),
+                  Align(
+                    // A mágica acontece aqui
+                    alignment: _selectedGender == 'Masculino'
+                        ? Alignment(-0.22,-0.10)   // Se a condição for VERDADEIRA (gênero é Masculino)
+                        : Alignment(-0.176,-0.22), // Se a condição for FALSA (qualquer outra coisa, como Feminino)
+                    child: Container(
+                      width: 15,
+                      height: 15,
+                      color: colorToShow2,
+                    ),
+                  ),
+                  Align(
+                    // A mágica acontece aqui
+                    alignment: _selectedGender == 'Masculino'
+                        ? Alignment(-0.155,-0.17)   // Se a condição for VERDADEIRA (gênero é Masculino)
+                        : Alignment(-0.135,-0.17), // Se a condição for FALSA (qualquer outra coisa, como Feminino)
+                    child: Container(
+                      width: 15,
+                      height: 15,
+                      color: colorToShow2,
+                    ),
+                  ),
                   // CONDIÇÃO ATUALIZADA com os novos widgets
                   if (_selectedGender == 'Masculino' || _selectedGender == 'Feminino')
                     Align(
@@ -242,6 +361,18 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
                         ),
                       ),
                     ),
+                  if (_selectedPower != 'Girar Poder')
+                  Align(
+                    alignment: Alignment(-0.14, 0.61),
+                    child:Text(
+                      _selectedPower,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 12,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    )
+                  )
                 ],
               ),
             ),
@@ -314,12 +445,9 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
             animateFirst: false,
             items: [for (var gender in _genders) FortuneItem(child: Text(gender))],
             onAnimationEnd: () {
-              print('--- ANIMAÇÃO DO GÊNERO TERMINOU ---');
-              print('O gênero selecionado deveria ser: ${_genders[_genderResultIndex]}');
               setState(() {
                 _selectedGender = _genders[_genderResultIndex];
               });
-              print('Variável _selectedGender atualizada para: $_selectedGender');
             },
           ),
         ),
@@ -367,7 +495,13 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(option.name),
+                      Flexible( // 1. Envolva o Text com Flexible
+                        child: Text(
+                          option.name,
+                          overflow: TextOverflow.ellipsis, // 2. Adicione overflow para cortar texto muito longo com "..."
+                          softWrap: false, // 3. Impede que o texto quebre a linha
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -423,7 +557,13 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(option.name),
+                      Flexible( // 1. Envolva o Text com Flexible
+                        child: Text(
+                          option.name,
+                          overflow: TextOverflow.ellipsis, // 2. Adicione overflow para cortar texto muito longo com "..."
+                          softWrap: false, // 3. Impede que o texto quebre a linha
+                        ),
+                      ),
                     ],
                   ),
                 ),
