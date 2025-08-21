@@ -14,9 +14,15 @@ class ColorOption {
   const ColorOption({required this.name, required this.color});
 }
 
+class OriginOption {
+  final String name;
+  final double value; // Usaremos double para valores como +1.5 e -0.5
+
+  const OriginOption({required this.name, required this.value});
+}
 
 // MODIFICADO: Adicionando os novos passos
-enum CharacterCreationStep { name, gender, hairColor, eyeColor, power, summary }
+enum CharacterCreationStep { name, gender, hairColor, eyeColor,origin, power, summary }
 
 class CreateCharacterPage extends StatefulWidget {
   const CreateCharacterPage({super.key});
@@ -37,20 +43,35 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
   String _selectedPower = 'Girar Poder';
   ColorOption? _selectedHairColor;
   ColorOption? _selectedEyeColor;
+  OriginOption? _selectedOrigin;
+  double _originModifier = 0.0;
+
+
 
   // Controllers
   final StreamController<int> _genderController = StreamController<int>();
   final StreamController<int> _powerController = StreamController<int>();
   final StreamController<int> _hairColorController = StreamController<int>();
   final StreamController<int> _eyeColorController = StreamController<int>();
+  final StreamController<int> _originController = StreamController<int>();
 
   // Índices de Resultado
   int _genderResultIndex = 0;
   int _powerResultIndex = 0;
   int _hairColorResultIndex = 0;
   int _eyeColorResultIndex = 0;
+  int _originResultIndex = 0;
 
   // Listas de Opções
+  final List<OriginOption> _origins = [
+    const OriginOption(name: 'Cripple(-1.5)', value: -1.5),
+    const OriginOption(name: 'Low-Tier(-1.0)', value: -1.0),
+    const OriginOption(name: 'Poor(-0.5)', value: -0.5),
+    const OriginOption(name: 'Mid-Tier(+0.0)', value: 0.0),
+    const OriginOption(name: 'Rich(+0.5)', value: 0.5),
+    const OriginOption(name: 'High-Tier(+1.0)', value: 1.0),
+    const OriginOption(name: 'God-Tier(+1.5)', value: 1.5),
+  ];
   final List<String> _genders = ['Masculino', 'Feminino'];
   final List<String> _powers = [
     'Afterimage',
@@ -195,6 +216,31 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
     }
   }
 
+  int _getWeightedRandomIndex(List<int> weights) {
+    // 1. Soma todos os pesos para saber o "tamanho" total do nosso dado.
+    // Ex: [60, 30, 10] -> total = 100
+    final totalWeight = weights.reduce((value, element) => value + element);
+
+    // 2. Sorteia um número aleatório entre 0 e o total.
+    // Ex: um número entre 0 e 99
+    final randomNumber = Random().nextInt(totalWeight);
+
+    // 3. Itera pelos pesos para ver em qual "faixa" o número sorteado caiu.
+    int cumulativeWeight = 0;
+    for (int i = 0; i < weights.length; i++) {
+      cumulativeWeight += weights[i];
+      if (randomNumber < cumulativeWeight) {
+        // Se o número sorteado for menor que o peso acumulado,
+        // então encontramos nosso índice.
+        return i;
+      }
+    }
+
+    // Como segurança, caso algo dê errado (não deve acontecer)
+    return 0;
+  }
+
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -202,6 +248,7 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
     _powerController.close();
     _hairColorController.close();
     _eyeColorController.close();
+    _originController.close();
     super.dispose();
   }
 
@@ -224,6 +271,7 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
             return;
           }
           _currentStep = CharacterCreationStep.hairColor;
+          break;
         case CharacterCreationStep.hairColor:
           if (_selectedHairColor == null) { // MODIFICADO
             ScaffoldMessenger.of(context).showSnackBar(
@@ -237,6 +285,15 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
           if (_selectedEyeColor == null) { // MODIFICADO
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Por favor, gire a roleta da Cor do Olho.')),
+            );
+            return;
+          }
+          _currentStep = CharacterCreationStep.origin;
+          break;
+        case CharacterCreationStep.origin: // NOVO
+          if (_selectedOrigin == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Por favor, gire a roleta da Origem.')),
             );
             return;
           }
@@ -264,6 +321,8 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
       gender: _selectedGender,
       hairColor: _selectedHairColor!.name, // Salva apenas o nome da cor
       eyeColor: _selectedEyeColor!.name,   // Salva apenas o nome da cor
+      origin: _selectedOrigin!.name,
+      originModifier: _originModifier,
       power: _selectedPower,
     );
     ScaffoldMessenger.of(context).showSnackBar(
@@ -277,6 +336,8 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Usar Colors.transparent faz com que os quadrados não apareçam
+    // até que uma cor seja de fato selecionada.
     Color colorToShow = _selectedHairColor?.color ?? Colors.white;
     Color colorToShow2 = _selectedEyeColor?.color ?? Colors.white;
 
@@ -289,91 +350,97 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Imagem de fundo com o personagem sobreposto
+            // --- ÁREA DE CRIAÇÃO RESPONSIVA ---
             SizedBox(
-              height: 300, // Altura da sua imagem base
-              child: Stack(
-                  // O alinhamento do Stack continua no centro para a imagem de base
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                   alignment: Alignment(-0.2, 0),
-                   child:Container(
-                     width: 150,   // 200 pixels de largura
-                     height: 150,  // 100 pixels de altura
-                     color: colorToShow,
-
-
-                   )
-                  ),
-                  Align(
-                    // A mágica acontece aqui
-                    alignment: _selectedGender == 'Masculino'
-                        ? Alignment(-0.22,-0.10)   // Se a condição for VERDADEIRA (gênero é Masculino)
-                        : Alignment(-0.176,-0.22), // Se a condição for FALSA (qualquer outra coisa, como Feminino)
-                    child: Container(
-                      width: 15,
-                      height: 15,
-                      color: colorToShow2,
-                    ),
-                  ),
-                  Align(
-                    // A mágica acontece aqui
-                    alignment: _selectedGender == 'Masculino'
-                        ? Alignment(-0.155,-0.17)   // Se a condição for VERDADEIRA (gênero é Masculino)
-                        : Alignment(-0.135,-0.17), // Se a condição for FALSA (qualquer outra coisa, como Feminino)
-                    child: Container(
-                      width: 15,
-                      height: 15,
-                      color: colorToShow2,
-                    ),
-                  ),
-                  // CONDIÇÃO ATUALIZADA com os novos widgets
-                  if (_selectedGender == 'Masculino' || _selectedGender == 'Feminino')
-                    Align(
-                      // 1. POSICIONAMENTO:
-                      //    -0.2 move o widget 10% para a esquerda do centro.
-                      //    Valores vão de -1.0 (extrema esquerda) a 1.0 (extrema direita).
-                      alignment: const Alignment(-0.216, 0.0),
-                      child: Transform.scale(
-                        // 2. TAMANHO:
-                        //    0.8 torna o widget 20% menor (80% do tamanho original).
-                        //    1.0 é o tamanho normal.
-                        scale: 0.61,
-                        child: Image.asset(_characterImage),
-                      ),
-                    ),
-                  Image.asset('assets/images/character_base.png'),
-                  if (_nameController.text.isNotEmpty)
-                    Align(
-                      // Alinha o texto na parte de baixo e centralizado
-                      alignment: const Alignment(-0.14, 0.56),
-                      child: Padding(
-                        // Adiciona um respiro na parte de baixo
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: Text(
-                          _nameController.text,
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                            fontWeight: FontWeight.normal,
-                          ),
+              height: 450,
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  // Nossa "Tela de Desenho" com tamanho fixo
+                  width: 400,
+                  height: 400,
+                  child: Stack(
+                    // A ordem dos children aqui é a MESMA que a sua original
+                    children: [
+                      // 1. Cabelo (ficará no fundo)
+                      Align(
+                        alignment: const Alignment(-0.7, -0.5),
+                        child: Container(
+                          width: 150,
+                          height: 150,
+                          color: colorToShow,
                         ),
                       ),
-                    ),
-                  if (_selectedPower != 'Girar Poder')
-                  Align(
-                    alignment: Alignment(-0.14, 0.61),
-                    child:Text(
-                      _selectedPower,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 12,
-                        fontWeight: FontWeight.normal,
+
+                      // 2. Olho Esquerdo
+                      Align(
+                        alignment: _selectedGender == 'Masculino'
+                            ? const Alignment(-0.63, -0.37)
+                            : const Alignment(-0.38, -0.4),
+                        child: Container(
+                          width: 15,
+                          height: 15,
+                          color: colorToShow2,
+                        ),
                       ),
-                    )
-                  )
-                ],
+
+                      // 3. Olho Direito
+                      Align(
+                        alignment: _selectedGender == 'Masculino'
+                            ? const Alignment(-0.415, -0.42)
+                            : const Alignment(-0.5, -0.46),
+                        child: Container(
+                          width: 15,
+                          height: 15,
+                          color: colorToShow2,
+                        ),
+                      ),
+
+                      // 4. Imagem do personagem (masculino/feminino)
+                      if (_selectedGender == 'Masculino' || _selectedGender == 'Feminino')
+                        Align(
+                          alignment: const Alignment(-1.25, -0.75),
+                          child: Transform.scale(
+                            scale: 0.61,
+                            child: Image.asset(_characterImage),
+                          ),
+                        ),
+                      //-1,034 , -0.75
+                      // 5. IMAGEM DE BASE (por cima de tudo que veio antes)
+                      Image.asset('assets/images/character_base.png'),
+
+                      // 6. Nome do Personagem
+                      if (_nameController.text.isNotEmpty)
+                        Align(
+                          alignment: const Alignment(-0.4, 0.045),
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: Text(
+                              _nameController.text,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 12,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      // 7. Poder do Personagem
+                      if (_selectedPower != 'Girar Poder')
+                        Align(
+                            alignment: const Alignment(-0.4, 0.1),
+                            child: Text(
+                              _selectedPower,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 12,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            )),
+                    ],
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -401,6 +468,8 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
         return _buildHairColorStep();
       case CharacterCreationStep.eyeColor:
         return _buildEyeColorStep();
+      case CharacterCreationStep.origin:
+        return _buildOriginStep();
       case CharacterCreationStep.power:
         return _buildPowerStep();
       case CharacterCreationStep.summary:
@@ -618,6 +687,50 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
         Text('Poder selecionado: $_selectedPower', style: const TextStyle(fontSize: 16)),
         const SizedBox(height: 40),
         ElevatedButton(onPressed: _nextStep, child: const Text('Finalizar')),
+      ],
+    );
+  }
+
+  Widget _buildOriginStep() {
+    return Column(
+      key: const ValueKey('origin_step'),
+      children: [
+        const Text('Passo 5: Origem da Família', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 150,
+          child: FortuneWheel(
+            selected: _originController.stream,
+            animateFirst: false,
+            // MODIFICADO: O item da roleta agora exibe a propriedade .name
+            items: [for (var origin in _origins) FortuneItem(child: Text(origin.name))],
+
+            // MODIFICADO: onAnimationEnd agora atualiza as duas variáveis
+            onAnimationEnd: () {
+              setState(() {
+                _selectedOrigin = _origins[_originResultIndex];
+                _originModifier = _selectedOrigin!.value;
+              });
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: () {
+            final List<int> weights = [5, 10, 15, 40, 15, 10, 5];
+            _originResultIndex = _getWeightedRandomIndex(weights);
+            _originController.add(_originResultIndex);
+          },
+          child: const Text('Girar Roleta'),
+        ),
+        const SizedBox(height: 20),
+        // MODIFICADO: Exibe o nome da origem selecionada
+        Text(
+            'Origem selecionada: ${_selectedOrigin?.name ?? 'Gire a roleta'}',
+            style: const TextStyle(fontSize: 16)
+        ),
+        const SizedBox(height: 40),
+        ElevatedButton(onPressed: _nextStep, child: const Text('Próximo Passo')),
       ],
     );
   }
