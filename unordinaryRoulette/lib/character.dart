@@ -1,3 +1,5 @@
+// Em: lib/character.dart
+
 class Character {
   final String name;
   final String gender;
@@ -28,4 +30,6 @@ class Character {
     required this.defense,
     required this.finalLevel,
   });
+
+// Os métodos toJson e fromJson foram removidos.
 }

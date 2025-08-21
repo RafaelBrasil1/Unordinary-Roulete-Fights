@@ -404,7 +404,7 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
         content: Text('Personagem ${newCharacter.name} criado com sucesso!'),
       ),
     );
-    Navigator.pop(context);
+    Navigator.pop(context, newCharacter);
   }
 
 
