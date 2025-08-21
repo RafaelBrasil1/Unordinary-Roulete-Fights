@@ -6,6 +6,12 @@ class Character {
   final String eyeColor;
   final String origin;
   final double originModifier;
+  final double strength;
+  final double speed;
+  final double trick;
+  final double recovery;
+  final double defense;
+  final double finalLevel;
 
   Character({
     required this.name,
@@ -15,5 +21,11 @@ class Character {
     required this.eyeColor,
     required this.origin,
     required this.originModifier,
+    required this.strength,
+    required this.speed,
+    required this.trick,
+    required this.recovery,
+    required this.defense,
+    required this.finalLevel,
   });
 }

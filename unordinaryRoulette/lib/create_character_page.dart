@@ -5,6 +5,7 @@ import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:unordinaryroulette/character.dart';
+import 'package:unordinaryroulette/stat_painter.dart';
 
 // Adicione esta classe no topo do seu arquivo
 class ColorOption {
@@ -22,7 +23,20 @@ class OriginOption {
 }
 
 // MODIFICADO: Adicionando os novos passos
-enum CharacterCreationStep { name, gender, hairColor, eyeColor,origin, power, summary }
+enum CharacterCreationStep {
+  name,
+  gender,
+  hairColor,
+  eyeColor,
+  origin,
+  strength, // NOVO
+  speed,    // NOVO
+  trick,    // NOVO
+  recovery, // NOVO
+  defense,  // NOVO
+  power,
+  summary
+}
 
 class CreateCharacterPage extends StatefulWidget {
   const CreateCharacterPage({super.key});
@@ -45,6 +59,11 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
   ColorOption? _selectedEyeColor;
   OriginOption? _selectedOrigin;
   double _originModifier = 0.0;
+  double _strength = 0.0;
+  double _speed = 0.0;
+  double _trick = 0.0;
+  double _recovery = 0.0;
+  double _defense = 0.0;
 
 
 
@@ -54,6 +73,11 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
   final StreamController<int> _hairColorController = StreamController<int>();
   final StreamController<int> _eyeColorController = StreamController<int>();
   final StreamController<int> _originController = StreamController<int>();
+  final StreamController<int> _strengthController = StreamController<int>();
+  final StreamController<int> _speedController = StreamController<int>();
+  final StreamController<int> _trickController = StreamController<int>();
+  final StreamController<int> _recoveryController = StreamController<int>();
+  final StreamController<int> _defenseController = StreamController<int>();
 
   // Índices de Resultado
   int _genderResultIndex = 0;
@@ -61,6 +85,12 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
   int _hairColorResultIndex = 0;
   int _eyeColorResultIndex = 0;
   int _originResultIndex = 0;
+  int _strengthResultIndex = 0;
+  int _speedResultIndex = 0;
+  int _trickResultIndex = 0;
+  int _recoveryResultIndex = 0;
+  int _defenseResultIndex = 0;
+
 
   // Listas de Opções
   final List<OriginOption> _origins = [
@@ -73,6 +103,7 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
     const OriginOption(name: 'God-Tier(+1.5)', value: 1.5),
   ];
   final List<String> _genders = ['Masculino', 'Feminino'];
+  final List<double> _statValues = List.generate(91, (index) => 1.0 + index * 0.1);
   final List<String> _powers = [
     'Afterimage',
     'Arachnid',
@@ -240,6 +271,27 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
     return 0;
   }
 
+  int _getStatRollIndex() {
+    // 1. Gera uma lista de pesos base dinamicamente, criando uma curva de sino.
+    final int itemCount = _statValues.length; // Agora 91
+    final List<double> baseWeights = List.generate(itemCount, (index) {
+      // Esta fórmula cria uma curva onde o meio tem o maior peso.
+      double halfway = (itemCount - 1) / 2.0;
+      double weight = halfway - (index - halfway).abs();
+      return weight + 1; // Garante que o peso mínimo seja 1
+    });
+
+    // 2. Aplica o modificador de origem para "deslocar" os pesos
+    final modifiedWeights = List<int>.generate(baseWeights.length, (index) {
+      final multiplier = 1.0 + (_originModifier * (index / baseWeights.length));
+      final newWeight = baseWeights[index] * multiplier;
+      return newWeight.round().clamp(1, 1000); // Garante que o peso seja pelo menos 1
+    });
+
+    // 3. Usa a nossa função de sorteio ponderado já existente
+    return _getWeightedRandomIndex(modifiedWeights);
+  }
+
 
   @override
   void dispose() {
@@ -249,6 +301,11 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
     _hairColorController.close();
     _eyeColorController.close();
     _originController.close();
+    _strengthController.close();
+    _speedController.close();
+    _trickController.close();
+    _recoveryController.close();
+    _defenseController.close();
     super.dispose();
   }
 
@@ -289,23 +346,33 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
             return;
           }
           _currentStep = CharacterCreationStep.origin;
+        case CharacterCreationStep.origin:
+          if (_selectedOrigin == null) { /* ... */ return; }
+          _currentStep = CharacterCreationStep.strength;
           break;
-        case CharacterCreationStep.origin: // NOVO
-          if (_selectedOrigin == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Por favor, gire a roleta da Origem.')),
-            );
-            return;
-          }
+      // NOVOS PASSOS
+        case CharacterCreationStep.strength:
+          if (_strength == 0.0) { /* ... snackbar ... */ return; }
+          _currentStep = CharacterCreationStep.speed;
+          break;
+        case CharacterCreationStep.speed:
+          if (_speed == 0.0) { /* ... snackbar ... */ return; }
+          _currentStep = CharacterCreationStep.trick;
+          break;
+        case CharacterCreationStep.trick:
+          if (_trick == 0.0) { /* ... snackbar ... */ return; }
+          _currentStep = CharacterCreationStep.recovery;
+          break;
+        case CharacterCreationStep.recovery:
+          if (_recovery == 0.0) { /* ... snackbar ... */ return; }
+          _currentStep = CharacterCreationStep.defense;
+          break;
+        case CharacterCreationStep.defense:
+          if (_defense == 0.0) { /* ... snackbar ... */ return; }
           _currentStep = CharacterCreationStep.power;
           break;
         case CharacterCreationStep.power:
-          if (_selectedPower == 'Girar Poder') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Por favor, gire a roleta do Poder.')),
-            );
-            return;
-          }
+          if (_selectedPower == 'Girar Poder') { /* ... */ return; }
           _currentStep = CharacterCreationStep.summary;
           break;
         case CharacterCreationStep.summary:
@@ -315,15 +382,22 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
   }
 
   void _saveCharacter() {
+    final double finalLevel = (_strength + _speed + _trick + _recovery + _defense) / 5;
     // O '!' é seguro aqui porque a lógica do _nextStep impede que cheguemos aqui com valores nulos.
     final newCharacter = Character(
       name: _nameController.text.isEmpty ? 'Sem Nome' : _nameController.text,
       gender: _selectedGender,
-      hairColor: _selectedHairColor!.name, // Salva apenas o nome da cor
-      eyeColor: _selectedEyeColor!.name,   // Salva apenas o nome da cor
+      hairColor: _selectedHairColor!.name,
+      eyeColor: _selectedEyeColor!.name,
       origin: _selectedOrigin!.name,
       originModifier: _originModifier,
+      strength: _strength,
+      speed: _speed,
+      trick: _trick,
+      recovery: _recovery,
+      defense: _defense,
       power: _selectedPower,
+      finalLevel: finalLevel,
     );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -340,6 +414,7 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
     // até que uma cor seja de fato selecionada.
     Color colorToShow = _selectedHairColor?.color ?? Colors.white;
     Color colorToShow2 = _selectedEyeColor?.color ?? Colors.white;
+    final double finalLevel = (_strength + _speed + _trick + _recovery + _defense) / 5;
 
     return Scaffold(
       appBar: AppBar(
@@ -408,6 +483,20 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
                       //-1,034 , -0.75
                       // 5. IMAGEM DE BASE (por cima de tudo que veio antes)
                       Image.asset('assets/images/character_base.png'),
+                      CustomPaint(
+                        size: Size.infinite,
+                        painter: StatPainter(
+                          fillColor: _selectedHairColor?.color ?? const Color(0xFF00BFFF),
+                          power: _strength,
+                          speed: _speed,
+                          trick: _trick,
+                          recovery: _recovery,
+                          defense: _defense,
+                          // EXEMPLO: Pentágono com 55% do tamanho e deslocado para a direita
+                          sizeMultiplier: 0.38,
+                          centerOffset: const Offset(84.5, -41), // (X, Y) -> 105 pixels para a direita, 0 para baixo
+                        ),
+                      ),
 
                       // 6. Nome do Personagem
                       if (_nameController.text.isNotEmpty)
@@ -429,7 +518,7 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
                       // 7. Poder do Personagem
                       if (_selectedPower != 'Girar Poder')
                         Align(
-                            alignment: const Alignment(-0.4, 0.1),
+                            alignment: const Alignment(-0.4, 0.09),
                             child: Text(
                               _selectedPower,
                               style: const TextStyle(
@@ -438,6 +527,65 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
                                 fontWeight: FontWeight.normal,
                               ),
                             )),
+                      if (_currentStep == CharacterCreationStep.summary)
+                        Align(
+                            alignment: const Alignment(-0.4, 0.18),
+                            child: Text(
+                              finalLevel.toStringAsFixed(1),
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 12,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            )),
+                      if (_strength > 0.0)
+                        Align(
+                          alignment: const Alignment(0.45, -0.75),
+                          child: Text(
+                            "(${_strength.toStringAsFixed(1)})",
+                            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
+
+                      // Velocidade (Speed) - Ponta Direita-Superior
+                      if (_speed > 0.0)
+                        Align(
+                          alignment: const Alignment(0.94, -0.29),
+                          child: Text(
+                            "(${_speed.toStringAsFixed(1)})",
+                            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
+
+                      // Trick - Ponta Direita-Inferior
+                      if (_trick > 0.0)
+                        Align(
+                          alignment: const Alignment(0.74, 0.23),
+                          child: Text(
+                            "(${_trick.toStringAsFixed(1)})",
+                            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
+
+                      // Recovery - Ponta Esquerda-Inferior
+                      if (_recovery > 0.0)
+                        Align(
+                          alignment: const Alignment(0.2, 0.23),
+                          child: Text(
+                            "(${_recovery.toStringAsFixed(1)})",
+                            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
+
+                      // Defesa (Defense) - Ponta Esquerda-Superior
+                      if (_defense > 0.0)
+                        Align(
+                          alignment: const Alignment(-0.03, -0.3),
+                          child: Text(
+                            "(${_defense.toStringAsFixed(1)})",
+                            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -470,6 +618,57 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
         return _buildEyeColorStep();
       case CharacterCreationStep.origin:
         return _buildOriginStep();
+    // NOVOS PASSOS usando o widget reutilizável
+      case CharacterCreationStep.strength:
+        return _buildStatStep(
+          title: 'Passo 6: Força',
+          selectedValue: _strength,
+          controller: _strengthController,
+          onResultIndex: (index) => setState(() {
+            _strengthResultIndex = index;
+            _strength = _statValues[index];
+          }),
+        );
+      case CharacterCreationStep.speed:
+        return _buildStatStep(
+          title: 'Passo 7: Velocidade',
+          selectedValue: _speed,
+          controller: _speedController,
+          onResultIndex: (index) => setState(() {
+            _speedResultIndex = index;
+            _speed = _statValues[index];
+          }),
+        );
+      case CharacterCreationStep.trick:
+        return _buildStatStep(
+          title: 'Passo 8: Trick',
+          selectedValue: _trick,
+          controller: _trickController,
+          onResultIndex: (index) => setState(() {
+            _trickResultIndex = index;
+            _trick = _statValues[index];
+          }),
+        );
+      case CharacterCreationStep.recovery:
+        return _buildStatStep(
+          title: 'Passo 9: Recovery',
+          selectedValue: _recovery,
+          controller: _recoveryController,
+          onResultIndex: (index) => setState(() {
+            _recoveryResultIndex = index;
+            _recovery = _statValues[index];
+          }),
+        );
+      case CharacterCreationStep.defense:
+        return _buildStatStep(
+          title: 'Passo 10: Defesa',
+          selectedValue: _defense,
+          controller: _defenseController,
+          onResultIndex: (index) => setState(() {
+            _defenseResultIndex = index;
+            _defense = _statValues[index];
+          }),
+        );
       case CharacterCreationStep.power:
         return _buildPowerStep();
       case CharacterCreationStep.summary:
@@ -729,6 +928,55 @@ class _CreateCharacterPageState extends State<CreateCharacterPage> {
             'Origem selecionada: ${_selectedOrigin?.name ?? 'Gire a roleta'}',
             style: const TextStyle(fontSize: 16)
         ),
+        const SizedBox(height: 40),
+        ElevatedButton(onPressed: _nextStep, child: const Text('Próximo Passo')),
+      ],
+    );
+  }
+
+  Widget _buildStatStep({
+    required String title,
+    required double selectedValue,
+    required StreamController<int> controller,
+    required void Function(int) onResultIndex, // Esta função agora será chamada no final
+  }) {
+    int tempResultIndex = 0; // Variável temporária para guardar o índice
+
+    return Column(
+      key: ValueKey(title),
+      children: [
+        Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 150,
+          child: FortuneWheel(
+            selected: controller.stream,
+            animateFirst: false,
+            items: [for (var value in _statValues) FortuneItem(child: Text(value.toStringAsFixed(1)))],
+
+            // --- CORREÇÃO PRINCIPAL AQUI ---
+            // Agora, a atualização do valor acontece QUANDO A ANIMAÇÃO TERMINA.
+            onAnimationEnd: () {
+              onResultIndex(tempResultIndex);
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: () {
+            // 1. Sorteia o índice e o guarda temporariamente.
+            tempResultIndex = _getStatRollIndex();
+            // 2. Apenas manda a roleta girar. A atualização do valor ocorrerá no onAnimationEnd.
+            controller.add(tempResultIndex);
+          },
+          child: const Text('Girar Roleta'),
+        ),
+        const SizedBox(height: 20),
+        if (selectedValue > 0.0)
+          Text(
+            'Valor Sorteado: ${selectedValue.toStringAsFixed(1)}',
+            style: const TextStyle(fontSize: 16),
+          ),
         const SizedBox(height: 40),
         ElevatedButton(onPressed: _nextStep, child: const Text('Próximo Passo')),
       ],
